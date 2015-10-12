@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Thu Feb 12 11:54:12 2015
@@ -5,23 +6,24 @@ Created on Thu Feb 12 11:54:12 2015
 @author: ColdJB
 """
 
+import sys
 import cPickle as pickle
 import re
 import os.path
 import datetime
 import types
 
-
 # directory = '\\Primack\\Primack Projects\\01 Projects\\2015_hpi_twitter\\World Vape Day\\2015-05-10\\'
-directory = 'C:\\Users\\coldjb\\Desktop\\Data Transfer\\'
+# directory = 'C:\\Users\\coldjb\\Desktop\\Data Transfer\\'
+directory = '/home/welling/git/TweetHandling/TweetHandling/data'
 
 tweet_count = 0  # Start counting at n-1 (usually 0)
 skipper = 100    # Set this variable to save every n-th tweet (all tweets: 1)
 
 """The following string determines the format of the output records"""
-rowString = ("%(u_id)s,%(user)s,%(utc_off)s,%(created)s,%(faves)s,%(followers)s,"
-             + "%(tweets)s,%(date)s,%(t_id)s,%(text)s,%(day)s,%(yyyy)s,%(month)s,"
-             + "%(dd)s,%(hh)s,%(mm)s,%(ss)s\n")
+rowString = ("{0[u_id]:s},{0[user]:s},{0[utc_off]:s},{0[created]:s},{0[faves]:s},{0[followers]:s},"
+             + "{0[tweets]:s},{0[date]:s},{0[t_id]:s},{0[text]:s},{0[day]:s},{0[yyyy]:s},"
+             + "{0[month]:s},{0[dd]:s},{0[hh]:s},{0[mm]:s},{0[ss]:s}\n")
 
 
 # def globs():
@@ -78,7 +80,7 @@ def pkltocsv(data, saveFile):
     for fld, key in [('u_id', 'id'),
                      ('t_id', 'id_str'),
                      ('user', 'screen_name'),
-                     ('utc_off', 'utc_offset')
+                     ('utc_off', 'utc_offset'),
                      ('created', 'created_at'),
                      ('faves', 'favourites_count'),
                      ('followers', 'followers_count'),
@@ -139,6 +141,7 @@ def pkltocsv(data, saveFile):
 with open(os.path.join(directory, 'Data.csv'), 'a') as saveFile:
 
     for fname in os.listdir(directory):
+        print fname
         if fname[-4:] == '.pkl':
     #        try: # Exception handler removed from this top-level process.
             if int(fname[:8]) < int(datetime.datetime.today().strftime('%Y%m%d')):
@@ -148,6 +151,7 @@ with open(os.path.join(directory, 'Data.csv'), 'a') as saveFile:
                     tweet_count += 1
                     if tweet_count % 10000 == 0:  # Progress indicator
                         print '.', tweet_count,
+                        sys.stdout.flush()
 
                     if tweet_count % skipper == 0:  # See global "skipper" for description
                         pkltocsv(data, saveFile)
