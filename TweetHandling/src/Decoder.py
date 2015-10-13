@@ -29,6 +29,13 @@ rowString = ("{0[u_id]:s},{0[user]:s},{0[utc_off]:s},{0[created]:s},{0[faves]:s}
 
 emojiRe = re.compile(r"((\\U[0-9a-f]{8})|(\\u[0-9a-f]{4}))")
 
+replacementStringPairs = [(re.compile('"'), ' ["] '),
+                          (re.compile(r'\\n'), ' [RETURN] '),
+                          (re.compile(r'\\r'), ' [RETURN] '),
+                          (re.compile(','), ' [COMMA] '),
+                          (re.compile('&amp;'), '&')
+                          ]
+
 
 class EmojiDict(defaultdict):
     def __missing__(self, key):
@@ -39,12 +46,6 @@ class EmojiDict(defaultdict):
             self[key] = v
             print ('<Unknown code %s>' % v),
             return v
-
-# def globs():
-#     global tweet_count, skipper
-#     tweet_count=0 #Start counting at n-1 (usually 0)
-#     skipper=100 #Set this variable to save every n-th tweet (all tweets: 1)
-# globs()
 
 
 ### A relic of decoding JSON files - saved for posterity
@@ -76,13 +77,6 @@ def getpkl(directory, fn):
             except Exception, e:  # Other errors are printed and the process endures
                 print 'Ignoring exception: %s' % str(e)
                 continue
-
-
-### Emoji conversion process removed (too needy)
-# Load the emoji conversion file 
-#with open(directory+'emojilist3.csv', 'rb') as f:
-#    reader = csv.reader(f)
-#    emoji = list(reader)
 
 
 def pkltocsv(data, saveFile):
@@ -131,15 +125,8 @@ def pkltocsv(data, saveFile):
     try:
         uText = data['text']
         text = uText.encode('unicode-escape')
-        text = re.sub('"', ' ["] ', text)
-        text = re.sub(r'\\n', ' [RETURN] ', text)
-        text = re.sub(r'\\r', ' [RETURN] ', text)
-        text = re.sub(',', ' [COMMA]', text)
-        text = re.sub('&amp;', '&', text)
-    ### Emoji conversion process removed (too needy)
-    #    for key, val in emoji:
-    #        text = re.sub(key, val, text)
-    #    text = re.sub(r'\\ \[',' [',text)
+        for compRe, newStr in replacementStringPairs:
+            text = compRe.sub(newStr, text)
 
         try:
             words = re.split(emojiRe, text)
