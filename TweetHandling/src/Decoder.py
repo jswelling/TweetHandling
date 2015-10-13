@@ -12,19 +12,33 @@ import re
 import os.path
 import datetime
 import types
+from collections import defaultdict
 
 # directory = '\\Primack\\Primack Projects\\01 Projects\\2015_hpi_twitter\\World Vape Day\\2015-05-10\\'
 # directory = 'C:\\Users\\coldjb\\Desktop\\Data Transfer\\'
 directory = '/home/welling/git/TweetHandling/TweetHandling/data'
 
 tweet_count = 0  # Start counting at n-1 (usually 0)
-skipper = 100    # Set this variable to save every n-th tweet (all tweets: 1)
+#skipper = 100    # Set this variable to save every n-th tweet (all tweets: 1)
+skipper = 1    # Set this variable to save every n-th tweet (all tweets: 1)
 
 """The following string determines the format of the output records"""
 rowString = ("{0[u_id]:s},{0[user]:s},{0[utc_off]:s},{0[created]:s},{0[faves]:s},{0[followers]:s},"
              + "{0[tweets]:s},{0[date]:s},{0[t_id]:s},{0[text]:s},{0[day]:s},{0[yyyy]:s},"
              + "{0[month]:s},{0[dd]:s},{0[hh]:s},{0[mm]:s},{0[ss]:s}\n")
 
+emojiRe = re.compile(r"((\\U[0-9a-f]{8})|(\\u[0-9a-f]{4}))")
+
+
+class EmojiDict(defaultdict):
+    def __missing__(self, key):
+        if key in self:
+            return self[key]
+        else:
+            v = '\\%s' % key
+            self[key] = v
+            print ('<Unknown code %s>' % v),
+            return v
 
 # def globs():
 #     global tweet_count, skipper
@@ -115,7 +129,8 @@ def pkltocsv(data, saveFile):
     except:
         date = day = yyyy = month = dd = hh = mm = ss = ''
     try:
-        text = data['text'].encode('unicode-escape')
+        uText = data['text']
+        text = uText.encode('unicode-escape')
         text = re.sub('"', ' ["] ', text)
         text = re.sub(r'\\n', ' [RETURN] ', text)
         text = re.sub(r'\\r', ' [RETURN] ', text)
@@ -125,6 +140,17 @@ def pkltocsv(data, saveFile):
     #    for key, val in emoji:
     #        text = re.sub(key, val, text)
     #    text = re.sub(r'\\ \[',' [',text)
+
+        try:
+            words = re.split(emojiRe, text)
+            if len(words) > 1:
+                words = [w for w in words if w is not None]
+                text = ''.join([(emojiDict[w[1:]] if emojiRe.match(w) else w) for w in words])
+        except Exception, e:
+            print 'Exception: %s' % e
+            print 'unicode text: %s' % uText
+            print 'words: %s' % str(words)
+            raise
     except:
         text = ''
 
@@ -135,6 +161,13 @@ def pkltocsv(data, saveFile):
     # Append the row of data to the CSV file
     saveFile.write(rowString.format(rec))
 
+
+# Load the emoji codes
+emojiDict = EmojiDict()
+with open('emojilist3.csv') as f:
+    for line in f:
+        k, v = line.split(',')
+        emojiDict[k] = v.strip()
 
 ### This iterates through any .pkl files in the current directory Note:
 ### Files must match the naming conventions of our twitter streamer output.
